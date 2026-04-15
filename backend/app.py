@@ -11,7 +11,9 @@ from bson import ObjectId
 from pymongo import AsyncMongoClient, ReturnDocument
 
 # ------------------------------------------------------------------------ #
-#                         Inicialització de l'aplicació                    #
+#                         Inicialització de l'aplicació 
+# Aquest codi inicia l'aplicació FastAPI i carrega la connexió a MongoDB des del fitxer .env.
+# En el meu cas, vaig crear un arxiu .env amb la variable MONGODB_URL, llavors el load_dotenv() es qui carrega aquest arxiu.
 # ------------------------------------------------------------------------ #
 
 load_dotenv()
@@ -22,7 +24,10 @@ app = FastAPI(
 )
 
 # ------------------------------------------------------------------------ #
-#                   Configuració de la connexió amb MongoDB                #
+#                   Configuració de la connexió amb MongoDB     
+# En aquest apartat, primer, obtinc la URL amb "os.environ.get("MONGODB_URL"), que ve del fitxer .env creat anteriorment.
+# Despres amb "AsyncMongoClient(mongodb_url)" creo la connexió amb MongoDB i selecciono la base de dades "movies_db" i la col·lecció "movies", que es on es guardaran les pel·lícules.
+# Finalment, amb "PyObjectId" preparo els ids de MongoDB per a que es converteixin a string i que es puguin enviar en format JSOn a l'API.
 # ------------------------------------------------------------------------ #
 
 mongodb_url = os.environ.get("MONGODB_URL")
@@ -33,11 +38,13 @@ client = AsyncMongoClient(mongodb_url)
 db = client.movies_db
 movies_collection = db.get_collection("movies")
 
-# MongoDB usa ObjectId a _id; aquí el tractem com string per l'API
 PyObjectId = Annotated[str, BeforeValidator(str)]
 
 # ------------------------------------------------------------------------ #
-#                            Funcions auxiliars                            #
+#                            Funcions auxiliars   
+# Seguidament, aquest bloc es per a convertir dades de MongoDB a format JSON i la segona part es per validar que l'estat sigui correcte.
+# Per exemple, la funció "movie_helper" serveix per transformar el documentque ve de MongoDB en un format que l'API pot retornar. EL més important aquí es que converteix el _id a str, ja que MongoDB usa ObjectId i això no es pot enviar en JSON.
+# La funció "validate_status" comprova que el camp status només tingui valors vàlids.
 # ------------------------------------------------------------------------ #
 
 def movie_helper(movie: dict) -> dict:
@@ -63,7 +70,11 @@ def validate_status(status_value: str) -> str:
 
 
 # ------------------------------------------------------------------------ #
-#                            Definició dels models                         #
+#                            Definició dels models 
+# Aquest bloc defineix els models de dades amb Pydantic per validar i estructurar les pel·lícules en diferents casos.
+# El primer model, MovieModel, representa una pel·lícula completa. Defineix tots els camps com ara el titol, descripció, estat, entre altres. La configuració "model_config" permet usar _id com a id, acceptar tipus com ObjectId i mostra un exemple a Swagger.
+# El segon model, UpdateMovieModel, s’utilitza per actualitzar una pel·lícula. Tots els camps són opcionals, perquè no cal enviar-los tots.
+# El tercer model, UpdateStatusModel, és específic per canviar només l’estat. Només té el camp status, i serveix per l’endpoint PATCH.
 # ------------------------------------------------------------------------ #
 
 class MovieModel(BaseModel):
@@ -125,7 +136,8 @@ class UpdateStatusModel(BaseModel):
     )
 
 # ------------------------------------------------------------------------ #
-#                          Endpoint de comprovació                         #
+#                          Endpoint de comprovació       
+# Aquest endpoint és només de prova; serveix per verificar que l’API està funcionant correctament.
 # ------------------------------------------------------------------------ #
 
 @app.get("/")
@@ -133,7 +145,12 @@ async def root():
     return {"message": "API del gestor de pel·lícules funcionant correctament"}
 
 # ------------------------------------------------------------------------ #
-#                              CREATE - POST                               #
+#                              CREATE - POST   
+# Aquest endpoint crea una nova pel·lícula a la base de dades, les valida i retorna el document creat amb el seu id.
+# Amb "@app.post("/movies")" defineixo l'endpoint de "create". Després el "response_model=MovieModel" indica que la resposta seguirà aquest model, i "status_code=201" indica que s’ha creat correctament.
+# Després converteixo l’objecte a diccionari amb model_dump, sense ficar l’id perquè MongoDB el genera automàticament. Amb insert_one guardo la pel·lícula a la base de dades.
+# A continuació, recupero el document creat amb "find_one" per obtenir-lo amb el seu _id.
+# Finalment, retorno la pel·lícula utilitzant "movie_helper", que converteix l’_id a string per poder enviar-lo en JSON.
 # ------------------------------------------------------------------------ #
 
 @app.post("/movies", response_model=MovieModel, status_code=status.HTTP_201_CREATED)
