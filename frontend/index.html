@@ -1,9 +1,95 @@
-<!doctype html>
-<html>
-  <head>
-    <title>This is the title of the webpage!</title>
-  </head>
-  <body>
-    <p>This is an example paragraph. Anything in the <strong>body</strong> tag will appear on the page, just like this <strong>p</strong> tag and its contents.</p>
-  </body>
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestor de Pel·lícules</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/milligram@1.4.1/dist/milligram.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Gestor de Pel·lícules</h1>
+    <p>Frontend connectat amb FastAPI + MongoDB</p>
+
+    <section class="panel">
+      <h2 id="form-title">Afegir pel·lícula</h2>
+
+      <form id="movie-form">
+        <input type="hidden" id="movie-id">
+
+        <label for="title">Títol</label>
+        <input type="text" id="title" placeholder="Títol" required>
+
+        <label for="description">Descripció</label>
+        <textarea id="description" placeholder="Descripció" required></textarea>
+
+        <label for="status">Estat</label>
+        <select id="status" required>
+          <option value="pendent de veure">Pendent de veure</option>
+          <option value="vista">Vista</option>
+        </select>
+
+        <label for="rating">Puntuació</label>
+        <input type="number" id="rating" min="1" max="5" placeholder="Puntuació de 1 a 5" required>
+
+        <label for="genre">Gènere</label>
+        <input type="text" id="genre" placeholder="Gènere" required>
+
+        <label for="user">Usuari</label>
+        <input type="text" id="user" placeholder="Usuari" required>
+
+        <div class="buttons-row">
+          <button type="submit" id="save-btn">Guardar</button>
+          <button type="button" id="cancel-edit-btn" class="button button-outline hidden">
+            Cancel·lar edició
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>Filtres</h2>
+
+      <div class="filters-grid">
+        <div>
+          <label for="filter-genre">Gènere</label>
+          <input type="text" id="filter-genre" placeholder="Filtrar per gènere">
+        </div>
+
+        <div>
+          <label for="filter-rating">Puntuació</label>
+          <input type="number" id="filter-rating" min="1" max="5" placeholder="Filtrar per puntuació">
+        </div>
+
+        <div>
+          <label for="filter-status">Estat</label>
+          <select id="filter-status">
+            <option value="">Tots els estats</option>
+            <option value="pendent de veure">Pendent de veure</option>
+            <option value="vista">Vista</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="filter-user">Usuari</label>
+          <input type="text" id="filter-user" placeholder="Filtrar per usuari">
+        </div>
+      </div>
+
+      <div class="buttons-row">
+        <button type="button" id="apply-filters-btn">Aplicar filtres</button>
+        <button type="button" id="clear-filters-btn" class="button button-outline">Netejar filtres</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Pel·lícules</h2>
+      <div id="movies-list"></div>
+    </section>
+  </div>
+
+  <script src="javascript.js"></script>
+</body>
 </html>
