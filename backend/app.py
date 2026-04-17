@@ -180,7 +180,8 @@ async def create_movie(movie: MovieModel):
     return movie_helper(created_movie)
 
 # ------------------------------------------------------------------------ #
-#                         READ - GET ALL + FILTRES                         #
+#                         READ - GET ALL + FILTRES 
+#       
 # ------------------------------------------------------------------------ #
 
 @app.get("/movies", response_model=List[MovieModel])

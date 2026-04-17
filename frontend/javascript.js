@@ -72,27 +72,42 @@ function renderMovies(movies) {
     return;
   }
 
-  moviesList.innerHTML = movies.map(movie => `
-    <div class="movie-card">
-      <h3>${escapeHtml(movie.title)}</h3>
-      <p>${escapeHtml(movie.description)}</p>
+  moviesList.innerHTML = movies.map((movie) => {
+    const statusClass = movie.status === "vista" ? "badge-vista" : "badge-pendent";
+    const posterText = escapeHtml(movie.genre).slice(0, 18);
 
-      <div class="movie-meta"><strong>Estat:</strong> ${escapeHtml(movie.status)}</div>
-      <div class="movie-meta"><strong>Puntuació:</strong> ${movie.rating}</div>
-      <div class="movie-meta"><strong>Gènere:</strong> ${escapeHtml(movie.genre)}</div>
-      <div class="movie-meta"><strong>Usuari:</strong> ${escapeHtml(movie.user)}</div>
+    return `
+      <div class="movie-card">
+        <div class="movie-poster">${posterText}</div>
 
-      <div class="movie-actions">
-        <button onclick="editMovie('${movie._id}')">Editar</button>
-        <button onclick="toggleStatus('${movie._id}', '${movie.status}')" class="button button-outline">
-          Canviar estat
-        </button>
-        <button onclick="deleteMovie('${movie._id}')" class="button button-outline">
-          Eliminar
-        </button>
+        <div class="movie-body">
+          <span class="badge ${statusClass}">${escapeHtml(movie.status)}</span>
+
+          <h3>${escapeHtml(movie.title)}</h3>
+
+          <p class="movie-description">${escapeHtml(movie.description)}</p>
+
+          <div class="movie-meta"><strong>Puntuació:</strong> ${movie.rating}/5</div>
+          <div class="movie-meta"><strong>Gènere:</strong> ${escapeHtml(movie.genre)}</div>
+          <div class="movie-meta"><strong>Usuari:</strong> ${escapeHtml(movie.user)}</div>
+
+          <div class="movie-actions">
+            <button onclick="editMovie('${movie._id}')" class="btn btn-danger btn-sm custom-btn">
+              Editar
+            </button>
+
+            <button onclick="toggleStatus('${movie._id}', '${movie.status}')" class="btn btn-outline-light btn-sm custom-btn">
+              Canviar estat
+            </button>
+
+            <button onclick="deleteMovie('${movie._id}')" class="btn btn-outline-light btn-sm custom-btn">
+              Eliminar
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
-  `).join("");
+    `;
+  }).join("");
 }
 
 async function handleFormSubmit(event) {
@@ -147,7 +162,7 @@ async function handleFormSubmit(event) {
     }
 
     resetForm();
-    loadMovies();
+    await loadMovies();
   } catch (error) {
     alert(error.message);
   }
@@ -171,9 +186,13 @@ async function editMovie(id) {
     genreInput.value = movie.genre;
     userInput.value = movie.user;
 
-    formTitle.textContent = "Editar pel·lícula";
-    cancelEditBtn.classList.remove("hidden");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    formTitle.textContent = "Edita la pel·lícula";
+    cancelEditBtn.classList.remove("d-none");
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
   } catch (error) {
     alert(error.message);
   }
@@ -196,7 +215,7 @@ async function toggleStatus(id, currentStatus) {
       throw new Error(errorData.detail || "No s'ha pogut canviar l'estat");
     }
 
-    loadMovies();
+    await loadMovies();
   } catch (error) {
     alert(error.message);
   }
@@ -218,7 +237,7 @@ async function deleteMovie(id) {
       throw new Error(errorData.detail || "No s'ha pogut eliminar la pel·lícula");
     }
 
-    loadMovies();
+    await loadMovies();
   } catch (error) {
     alert(error.message);
   }
@@ -227,8 +246,8 @@ async function deleteMovie(id) {
 function resetForm() {
   movieForm.reset();
   movieIdInput.value = "";
-  formTitle.textContent = "Afegir pel·lícula";
-  cancelEditBtn.classList.add("hidden");
+  formTitle.textContent = "Afegeix una nova pel·lícula";
+  cancelEditBtn.classList.add("d-none");
 }
 
 function clearFilters() {
