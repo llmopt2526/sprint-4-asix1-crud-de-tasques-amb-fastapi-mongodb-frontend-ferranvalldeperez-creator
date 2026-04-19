@@ -1,80 +1,268 @@
-//===Any global variables whose scope will need to be across the entire file...
-var currentId;
+const API_URL = "http://127.0.0.1:8000";
 
-//===Actually, I am kind of a big fan of defining a Global object, or something
-//	 similar to store all of my page-level variables to. Something like:
-var Global = {
-	currentId: undefined,
-	action: 'create',
-	user: {
-		userName: 'Bob',
-		email: 'bgibilaro@valexander.com',
-		extension: '2470'
-	}
-};
+const movieForm = document.getElementById("movie-form");
+const movieIdInput = document.getElementById("movie-id");
+const titleInput = document.getElementById("title");
+const descriptionInput = document.getElementById("description");
+const statusInput = document.getElementById("status");
+const ratingInput = document.getElementById("rating");
+const genreInput = document.getElementById("genre");
+const userInput = document.getElementById("user");
 
-// this allows me to get those values anywhere in the page with
-// something like Global.currentId or Global.user.userName. I can also set it by saying
-// Global.currentId = 2. I can even add to it on-the-fly by saying
-// Global.newVariable = 'something' which is now available over the
-// entirety of that page....
+const formTitle = document.getElementById("form-title");
+const cancelEditBtn = document.getElementById("cancel-edit-btn");
+const moviesList = document.getElementById("movies-list");
 
-//===My document.ready() handler...
-$(document).ready(function(){
+const filterGenre = document.getElementById("filter-genre");
+const filterRating = document.getElementById("filter-rating");
+const filterStatus = document.getElementById("filter-status");
+const filterUser = document.getElementById("filter-user");
+const applyFiltersBtn = document.getElementById("apply-filters-btn");
+const clearFiltersBtn = document.getElementById("clear-filters-btn");
 
-	//=== do some code stuff...
+document.addEventListener("DOMContentLoaded", () => {
+  loadMovies();
 
-	//===finally, bind my events...
-	bindEvents();
+  movieForm.addEventListener("submit", handleFormSubmit);
+  cancelEditBtn.addEventListener("click", resetForm);
+  applyFiltersBtn.addEventListener("click", loadMovies);
+  clearFiltersBtn.addEventListener("click", clearFilters);
 });
 
-//===This function handles event binding for anything on the page....
-function bindEvents(){
-	// So, something simply like binding to a static anchor tag...
-	$('#aSomeLink').on('click', function(event){
+async function loadMovies() {
+  try {
+    const queryParams = new URLSearchParams();
 
-		// do some cool code stuff...
-		// Mr. Wizard Time: try putting a break point someplace in here and
-		//	then investigate the event argument. All sorts of cool stuff can
-		//	come from there. In fact, what if I wanted to assign the link that
-		//	was clicked to a local variable?
+    if (filterGenre.value.trim()) {
+      queryParams.append("genre", filterGenre.value.trim());
+    }
 
-		// I could do this...
-		$a = $(this);	// note, prefixing the variable with bling ($) is just a 
-						// nice way for us to know that it is a jQuery object...
+    if (filterRating.value.trim()) {
+      queryParams.append("rating", filterRating.value.trim());
+    }
 
-		// Or, I could do this...
-		$a = $(event.target);
+    if (filterStatus.value.trim()) {
+      queryParams.append("status", filterStatus.value.trim());
+    }
 
-		// I could also get the id of the link like so:
-		var id = event.target.id;
+    if (filterUser.value.trim()) {
+      queryParams.append("user", filterUser.value.trim());
+    }
 
-		// not a big difference, but it is nice to use native JavaScript when you can. 
-	});
+    const url = queryParams.toString()
+      ? `${API_URL}/movies?${queryParams.toString()}`
+      : `${API_URL}/movies`;
 
-	// Hey, but I can also do something cooler with the on method. What if I have a table
-	//	full of documents on the page with the option to edit, delete, etc. each of the table
-	//	rows. I can handle this in one nice bind using on. for the sake of this example, let's
-	//	assume I gave the "delete" link an attribute of rel="delete" and the "edit" link an 
-	//	attribute of rel="edit", I could do the following:
-	$('#myTable').on('click', 'a[rel=delete],a[rel=edit]', function(event){
-		$a = $(event.target);
+    const response = await fetch(url);
 
-		switch($a.attr('rel')){
-			case 'edit':
+    if (!response.ok) {
+      throw new Error("No s'han pogut carregar les pel·lícules");
+    }
 
-				// do some stuff or call a function...
-				
-				break;
-			case 'delete':
-				// do some stuff or call a function...
-
-				break;
-		}
-	});
-
-	// the above allows you to setup your bindings one time, when the page loads and then forget about
-	//	it. It will apply those bindings any time a new row is added to #myTable, automagically...
+    const movies = await response.json();
+    renderMovies(movies);
+  } catch (error) {
+    moviesList.innerHTML = `<p>Error: ${error.message}</p>`;
+  }
 }
 
-//===Then everything below this is all of the other declared functions for my page...
+function renderMovies(movies) {
+  if (movies.length === 0) {
+    moviesList.innerHTML = "<p>No hi ha pel·lícules per mostrar.</p>";
+    return;
+  }
+
+  moviesList.innerHTML = movies.map((movie) => {
+    const statusClass = movie.status === "vista" ? "badge-vista" : "badge-pendent";
+    const posterText = escapeHtml(movie.genre).slice(0, 18);
+
+    return `
+      <div class="movie-card">
+        <div class="movie-poster">${posterText}</div>
+
+        <div class="movie-body">
+          <span class="badge ${statusClass}">${escapeHtml(movie.status)}</span>
+
+          <h3>${escapeHtml(movie.title)}</h3>
+
+          <p class="movie-description">${escapeHtml(movie.description)}</p>
+
+          <div class="movie-meta"><strong>Puntuació:</strong> ${movie.rating}/5</div>
+          <div class="movie-meta"><strong>Gènere:</strong> ${escapeHtml(movie.genre)}</div>
+          <div class="movie-meta"><strong>Usuari:</strong> ${escapeHtml(movie.user)}</div>
+
+          <div class="movie-actions">
+            <button onclick="editMovie('${movie._id}')" class="btn btn-danger btn-sm custom-btn">
+              Editar
+            </button>
+
+            <button onclick="toggleStatus('${movie._id}', '${movie.status}')" class="btn btn-outline-light btn-sm custom-btn">
+              Canviar estat
+            </button>
+
+            <button onclick="deleteMovie('${movie._id}')" class="btn btn-outline-light btn-sm custom-btn">
+              Eliminar
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function handleFormSubmit(event) {
+  event.preventDefault();
+
+  const movieData = {
+    title: titleInput.value.trim(),
+    description: descriptionInput.value.trim(),
+    status: statusInput.value,
+    rating: Number(ratingInput.value),
+    genre: genreInput.value.trim(),
+    user: userInput.value.trim()
+  };
+
+  if (
+    !movieData.title ||
+    !movieData.description ||
+    !movieData.status ||
+    !movieData.rating ||
+    !movieData.genre ||
+    !movieData.user
+  ) {
+    alert("Has d'omplir tots els camps.");
+    return;
+  }
+
+  try {
+    let response;
+    const movieId = movieIdInput.value;
+
+    if (movieId) {
+      response = await fetch(`${API_URL}/movies/${movieId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(movieData)
+      });
+    } else {
+      response = await fetch(`${API_URL}/movies`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(movieData)
+      });
+    }
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Error en guardar la pel·lícula");
+    }
+
+    resetForm();
+    await loadMovies();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function editMovie(id) {
+  try {
+    const response = await fetch(`${API_URL}/movies/${id}`);
+
+    if (!response.ok) {
+      throw new Error("No s'ha pogut carregar la pel·lícula");
+    }
+
+    const movie = await response.json();
+
+    movieIdInput.value = movie._id;
+    titleInput.value = movie.title;
+    descriptionInput.value = movie.description;
+    statusInput.value = movie.status;
+    ratingInput.value = movie.rating;
+    genreInput.value = movie.genre;
+    userInput.value = movie.user;
+
+    formTitle.textContent = "Edita la pel·lícula";
+    cancelEditBtn.classList.remove("d-none");
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function toggleStatus(id, currentStatus) {
+  const newStatus = currentStatus === "vista" ? "pendent de veure" : "vista";
+
+  try {
+    const response = await fetch(`${API_URL}/movies/${id}/status`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ status: newStatus })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "No s'ha pogut canviar l'estat");
+    }
+
+    await loadMovies();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function deleteMovie(id) {
+  const confirmDelete = confirm("Segur que vols eliminar aquesta pel·lícula?");
+  if (!confirmDelete) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_URL}/movies/${id}`, {
+      method: "DELETE"
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "No s'ha pogut eliminar la pel·lícula");
+    }
+
+    await loadMovies();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+function resetForm() {
+  movieForm.reset();
+  movieIdInput.value = "";
+  formTitle.textContent = "Afegeix una nova pel·lícula";
+  cancelEditBtn.classList.add("d-none");
+}
+
+function clearFilters() {
+  filterGenre.value = "";
+  filterRating.value = "";
+  filterStatus.value = "";
+  filterUser.value = "";
+  loadMovies();
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
